@@ -1,0 +1,52 @@
+# GitHub Actions workflow
+# Save this file at: .github/workflows/daily-tech-news.yml  in your repo
+#
+# What it does:
+#   1. Runs every day at a scheduled time (cron, UTC)
+#   2. Checks out your repo
+#   3. Installs Python + your dependencies
+#   4. Runs your Python script (e.g. tech_news.py)
+#   5. Your script should send the email itself using SMTP (see notes below)
+#
+# Required setup (GitHub repo -> Settings -> Secrets and variables -> Actions):
+#   EMAIL_SENDER     = your sending email address
+#   EMAIL_PASSWORD   = app password / SMTP password (NOT your normal password)
+#   EMAIL_RECEIVER   = where you want the news sent
+#   SMTP_SERVER      = e.g. smtp.gmail.com
+#   SMTP_PORT        = e.g. 587
+
+name: Daily Tech News Email
+
+on:
+  schedule:
+    # Runs every day at 07:00 UTC — change to match when you want it.
+    # Use https://crontab.guru to pick a different time.
+    - cron: "0 7 * * *"
+  workflow_dispatch: {}   # lets you also trigger it manually from the Actions tab
+
+jobs:
+  send-tech-news:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+
+      - name: Run tech news script
+        env:
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+          EMAIL_RECEIVER: ${{ secrets.EMAIL_RECEIVER }}
+          SMTP_SERVER: ${{ secrets.SMTP_SERVER }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+        run: python tech_news.py
